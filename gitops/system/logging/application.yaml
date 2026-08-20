@@ -13,7 +13,7 @@ spec:
     targetRevision: 6.6.2
     helm:
       values: |
-        deploymentMode: SimpleScalable
+        deploymentMode: SingleBinary
         loki:
           auth_enabled: false
           commonConfig:
@@ -29,20 +29,22 @@ spec:
                   period: 24h
           storage:
             type: filesystem
+        singleBinary:
+          replicas: 1
+          persistence:
+            enabled: false
         read:
-          replicas: 1
-          persistence:
-            enabled: false
+          replicas: 0
         write:
-          replicas: 1
-          persistence:
-            enabled: false
+          replicas: 0
         backend:
-          replicas: 1
-          persistence:
-            enabled: false
+          replicas: 0
         gateway:
-          enabled: true
+          enabled: false
+        resultsCache:
+          enabled: false
+        chunksCache:
+          enabled: false
         monitoring:
           selfMonitoring:
             enabled: false
