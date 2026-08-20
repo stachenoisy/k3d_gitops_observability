@@ -5,6 +5,9 @@
   <a href="https://github.com/stachenoisy/k3d_gitops_observability">
     <img src="https://img.shields.io/github/stars/stachenoisy/k3d_gitops_observability" alt="GitHub Repo stars">
   </a>
+  <a href="https://github.com/stachenoisy/k3d_gitops_observability/actions/workflows/ci.yaml">
+    <img src="https://img.shields.io/github/actions/workflow/status/stachenoisy/k3d_gitops_observability/ci.yaml" alt="GitHub Workflow">
+  </a>
   <a href="https://github.com/stachenoisy/k3d_gitops_observability/commits/main">
     <img src="https://img.shields.io/github/last-commit/stachenoisy/k3d_gitops_observability" alt="GitHub Last Commit">
   </a>
