@@ -12,7 +12,10 @@ spec:
     chart: kube-prometheus-stack
     targetRevision: 61.3.2
     helm:
+      skipCrds: true
       values: |
+        crds:
+          enabled: false
         grafana:
           adminPassword: admin
           service:
