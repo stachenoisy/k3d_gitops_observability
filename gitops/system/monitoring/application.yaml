@@ -22,15 +22,27 @@ spec:
             ingressClassName: nginx
             hosts:
               - grafana.localtest.me
-          additionalDataSources:
-            - name: Loki
-              type: loki
-              access: proxy
-              url: http://logging-stack-loki.logging.svc.cluster.local:3100
-              isDefault: false
+          datasources:
+            datasources.yaml:
+              apiVersion: 1
+              datasources:
+                - name: Loki
+                  type: loki
+                  access: proxy
+                  url: http://logging-stack-loki.logging.svc.cluster.local:3100
+                  isDefault: false
         prometheus:
           prometheusSpec:
             serviceMonitorSelectorNilUsesHelmValues: false
+            podMonitorSelectorNilUsesHelmValues: false
+        kubeControllerManager:
+          enabled: false
+        kubeScheduler:
+          enabled: false
+        kubeProxy:
+          enabled: false
+        kubeEtcd:
+          enabled: false
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
