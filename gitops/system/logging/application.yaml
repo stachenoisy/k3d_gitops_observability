@@ -29,10 +29,18 @@ spec:
                   period: 24h
           storage:
             type: filesystem
+          ruler:
+            enable_api: false
         singleBinary:
           replicas: 1
           persistence:
             enabled: false
+          extraVolumes:
+            - name: storage
+              emptyDir: {}
+          extraVolumeMounts:
+            - name: storage
+              mountPath: /var/loki
         read:
           replicas: 0
         write:
@@ -45,13 +53,15 @@ spec:
           enabled: false
         chunksCache:
           enabled: false
+        lokiCanary:
+          enabled: false
+        test:
+          enabled: false
         monitoring:
           selfMonitoring:
             enabled: false
             grafanaAgent:
               installOperator: false
-        test:
-          enabled: false
   destination:
     server: https://kubernetes.default.svc
     namespace: logging
