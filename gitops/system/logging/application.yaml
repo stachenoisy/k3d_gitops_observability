@@ -9,16 +9,65 @@ spec:
   project: default
   source:
     repoURL: https://grafana.github.io/helm-charts
-    chart: loki-stack
-    targetRevision: 2.10.2
+    chart: loki
+    targetRevision: 6.6.2
     helm:
       values: |
+        deploymentMode: SingleBinary
         loki:
-          enabled: true
+          auth_enabled: false
+          commonConfig:
+            replication_factor: 1
+          schemaConfig:
+            configs:
+              - from: 2024-01-01
+                store: tsdb
+                object_store: filesystem
+                schema: v13
+                index:
+                  prefix: index_
+                  period: 24h
+          storage:
+            type: filesystem
+        singleBinary:
+          replicas: 1
           persistence:
             enabled: false
-        promtail:
-          enabled: true
+        monitoring:
+          selfMonitoring:
+            enabled: false
+            grafanaAgent:
+              installOperator: false
+        test:
+          enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: logging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: promtail-stack
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: promtail
+    targetRevision: 6.15.5
+    helm:
+      values: |
+        config:
+          clients:
+            - url: http://logging-stack-loki:3100/loki/api/v1/push
   destination:
     server: https://kubernetes.default.svc
     namespace: logging
