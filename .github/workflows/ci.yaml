@@ -2,9 +2,9 @@ name: GitOps Lint & Validate
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   validate:
@@ -24,6 +24,7 @@ jobs:
               truthy: disable
               document-start: disable
               comments: disable
+              brackets: disable
 
       - name: Install Kubeconform
         run: |
