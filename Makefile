@@ -3,7 +3,7 @@
 CLUSTER_NAME ?= k3d-gitops-cluster
 K3D_CONFIG   ?= bootstrap/k3d-config.yaml
 
-.PHONY: help up down bootstrap-argocd bootstrap-crds init status port-forward port-forward-stop
+.PHONY: help up down bootstrap-argocd bootstrap-crds init status
 
 help: ## Display available commands
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -38,19 +38,7 @@ init: up bootstrap-crds bootstrap-argocd ## Bootstrap the entire local infrastru
 	kubectl apply -f bootstrap/root-app.yaml
 	@echo "==> Cluster and GitOps engine initialized."
 
-port-forward: ## Start background port-forward for ArgoCD UI (https://localhost:8080)
-	@echo "==> Starting ArgoCD port-forward in background on 8080:443..."
-	@pkill -f "kubectl port-forward svc/argocd-server" || true
-	@nohup kubectl port-forward svc/argocd-server -n argocd 8080:443 >/dev/null 2>&1 &
-	@echo "==> ArgoCD accessible at: https://localhost:8080"
-	@echo -n "==> Admin Password: "
-	@kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d && echo
-
-port-forward-stop: ## Stop background ArgoCD port-forward
-	@echo "==> Stopping ArgoCD port-forward process..."
-	@pkill -f "kubectl port-forward svc/argocd-server" || true
-
-down: port-forward-stop ## Tear down and delete the local k3d cluster
+down: ## Tear down and delete the local k3d cluster
 	@echo "==> Deleting k3d cluster..."
 	k3d cluster delete $(CLUSTER_NAME)
 
