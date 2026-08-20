@@ -10,16 +10,16 @@ help: ## Display available commands
 
 up: ## Provision the local k3d cluster
 	@echo "==> Creating k3d cluster from config..."
-	k3d cluster create --config $(K3D_CONFIG)
+	k3d cluster create --config $(K3D_CONFIG) || true
 	@echo "==> Cluster is ready. Context switched automatically."
 
 bootstrap-argocd: ## Install ArgoCD into the cluster
 	@echo "==> Creating argocd namespace..."
 	kubectl create namespace argocd || true
-	@echo "==> Installing latest stable ArgoCD manifests..."
-	kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+	@echo "==> Installing latest stable ArgoCD manifests via server-side apply..."
+	kubectl apply --server-side --force-conflicts -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 	@echo "==> Waiting for ArgoCD server components to be healthy..."
-	kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=300s
+	kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=600s
 	@echo "==> ArgoCD installation completed successfully."
 
 init: up bootstrap-argocd ## Bootstrap the entire local infrastructure
