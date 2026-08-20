@@ -1,0 +1,24 @@
+# K3d cluster configuration for local GitOps platform
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: k3d-gitops-cluster
+servers: 1
+agents: 2
+image: rancher/k3s:latest
+ports:
+  # Map host port 80 to loadbalancer port 80 (HTTP)
+  - port: 80:80
+    nodeFilters:
+      - loadbalancer
+  # Map host port 443 to loadbalancer port 443 (HTTPS)
+  - port: 443:443
+    nodeFilters:
+      - loadbalancer
+options:
+  k3s:
+    extraArgs:
+      # Disable embedded Traefik to deploy ingress-nginx via GitOps
+      - arg: --disable=traefik
+        nodeFilters:
+          - server:*
