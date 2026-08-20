@@ -3,7 +3,7 @@
 CLUSTER_NAME ?= k3d-gitops-cluster
 K3D_CONFIG   ?= bootstrap/k3d-config.yaml
 
-.PHONY: help up down bootstrap-argocd init status
+.PHONY: help up down bootstrap-argocd bootstrap-crds init status port-forward port-forward-stop
 
 help: ## Display available commands
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -12,6 +12,17 @@ up: ## Provision the local k3d cluster
 	@echo "==> Creating k3d cluster from config..."
 	k3d cluster create --config $(K3D_CONFIG) || true
 	@echo "==> Cluster is ready. Context switched automatically."
+
+bootstrap-crds: ## Pre-install Prometheus Operator CRDs via Server-Side Apply
+	@echo "==> Pre-installing Prometheus Operator CRDs..."
+	kubectl apply --server-side --force-conflicts -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.75.0/example/prometheus-operator-crd/monitoring.coreos.com_alertmanagers.yaml
+	kubectl apply --server-side --force-conflicts -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.75.0/example/prometheus-operator-crd/monitoring.coreos.com_podmonitors.yaml
+	kubectl apply --server-side --force-conflicts -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.75.0/example/prometheus-operator-crd/monitoring.coreos.com_probes.yaml
+	kubectl apply --server-side --force-conflicts -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.75.0/example/prometheus-operator-crd/monitoring.coreos.com_prometheuses.yaml
+	kubectl apply --server-side --force-conflicts -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.75.0/example/prometheus-operator-crd/monitoring.coreos.com_prometheusrules.yaml
+	kubectl apply --server-side --force-conflicts -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.75.0/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml
+	kubectl apply --server-side --force-conflicts -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.75.0/example/prometheus-operator-crd/monitoring.coreos.com_thanosrulers.yaml
+	kubectl apply --server-side --force-conflicts -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.75.0/example/prometheus-operator-crd/monitoring.coreos.com_scrapeconfigs.yaml
 
 bootstrap-argocd: ## Install ArgoCD into the cluster
 	@echo "==> Creating argocd namespace..."
@@ -22,10 +33,24 @@ bootstrap-argocd: ## Install ArgoCD into the cluster
 	kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=600s
 	@echo "==> ArgoCD installation completed successfully."
 
-init: up bootstrap-argocd ## Bootstrap the entire local infrastructure
+init: up bootstrap-crds bootstrap-argocd ## Bootstrap the entire local infrastructure
+	@echo "==> Applying Root GitOps Application..."
+	kubectl apply -f bootstrap/root-app.yaml
 	@echo "==> Cluster and GitOps engine initialized."
 
-down: ## Tear down and delete the local k3d cluster
+port-forward: ## Start background port-forward for ArgoCD UI (https://localhost:8080)
+	@echo "==> Starting ArgoCD port-forward in background on 8080:443..."
+	@pkill -f "kubectl port-forward svc/argocd-server" || true
+	@nohup kubectl port-forward svc/argocd-server -n argocd 8080:443 >/dev/null 2>&1 &
+	@echo "==> ArgoCD accessible at: https://localhost:8080"
+	@echo -n "==> Admin Password: "
+	@kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d && echo
+
+port-forward-stop: ## Stop background ArgoCD port-forward
+	@echo "==> Stopping ArgoCD port-forward process..."
+	@pkill -f "kubectl port-forward svc/argocd-server" || true
+
+down: port-forward-stop ## Tear down and delete the local k3d cluster
 	@echo "==> Deleting k3d cluster..."
 	k3d cluster delete $(CLUSTER_NAME)
 
